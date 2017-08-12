@@ -29,7 +29,7 @@ class DataSet:
 		self.raw_data_matrix = data
 
 
-	def process_data(self, days_back=90, extrapolate_method='connect_points'):
+	def process_time_data(self, days_back=90, extrapolate_method='connect_points'):
 
 		length = days_back * 6 * 24
 
@@ -72,7 +72,7 @@ class DataSet:
 
 
 
-	def training_set(self):
+	def training_set(self, output_type='regular'):
 
 		# If time series not yet processed - then process
 
@@ -87,37 +87,36 @@ class DataSet:
 		time_array = self.processed_time_series[:,0]
 		y_array = self.processed_time_series[:,1]
 
+		self.training_outputs = np.array([y_array for i in range(len(y_array))])
+
 		input_matrix = np.zeros([n_data_points,n_data_points])
 
-		temp_array = np.zeros(n_data_points)
+		output_matrix = np.zeros([n_data_points,n_data_points])
 
-		
+		temp_input_array = np.zeros(n_data_points)
+
+		temp_output_array = y_array
 
 
 		for x in range(n_data_points):
 
 			current_y = y_array[x]
 
-			temp_array[x] = y_array[x]
+			temp_input_array[x] = y_array[x]
 
-			input_matrix[x] = temp_array
+			temp_output_array[x] = 0
 
+			input_matrix[x] = temp_input_array
 
-			# for y in range(n_data_points):
+			output_matrix[x] = temp_output_array
 
-			# 	if y <= x:
-			# 		input_matrix[x][y] = y_array[y]
-
-			# 	else:
-			# 		break
 
 		self.training_inputs = input_matrix
 
-		# Create Output for Training Set
+		if output_type=="zeros":
 
-		outputs_array = self.processed_time_series[:,1]
-	
-		self.training_outputs = np.array([outputs_array for i in range(len(outputs_array))])
+			self.training_outputs = output_matrix
+
 
 		return self.training_inputs,self.training_outputs 
 
