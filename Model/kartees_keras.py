@@ -57,7 +57,7 @@ if __name__=='__main__':
 	# target = output_layer(data)
 
 
-	path = '../sample_data/sample2.csv'
+	path = '../sample_data/sample3.csv'
 
 	data = DataSet(path, header=True)
 
