@@ -9,6 +9,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 import h5py
 from DataProcessing import DataSet
 import time
+import os
 
 
 
@@ -19,8 +20,8 @@ def create_model(predictors, target):
 
 	model = Sequential()
 
-	model.add(Dense(200, activation='relu', input_shape=(input_dim,)))
-	#model.add(Dense(8000, activation='relu'))
+	model.add(Dense(500, activation='relu', input_shape=(input_dim,)))
+	model.add(Dense(500, activation='relu'))
 	# model.add(Dense(1000, activation='relu'))
 
 
@@ -34,7 +35,7 @@ def create_model(predictors, target):
 	filepath="weights.best.hdf5"
 	checkpoint = ModelCheckpoint(filepath, monitor='val_mean_squared_error', save_best_only=True, mode='max')
 
-	training = model.fit(predictors, target, verbose=True, batch_size = 10, epochs = 10, validation_split = 0.2,callbacks=[early_stopping_monitor, checkpoint])
+	training = model.fit(predictors, target, verbose=True, batch_size = 5, epochs = 2, validation_split = 0.2,callbacks=[early_stopping_monitor, checkpoint])
 
 	#print("Loss: %s, MSE: %s" %(training.history['val_loss'], training.history['mean_squared_error'] ) )
 	#print (training.history['val_loss'])
@@ -46,48 +47,87 @@ def create_model(predictors, target):
 	# plt.show()
 
 	return model, mse
+
+def load_data_sets(data_dir):
+
+	for subdir, dirs, files in os.walk(data_dir):
+
+		for file in files:
+
+			# Load this file's data
+
+			path = "%s/%s" %(data_dir,file)
+			data = DataSet(path,header=True)
+
+			predictors,target = data.sliding_window_training_set()
+
+			pdb.set_trace()
+			print(predictors)
 		
+
 
 if __name__=='__main__':
 
-	# data = load_data()
 
-	# predictors = create_predictors_targets(data)
-
-	# target = output_layer(data)
+	load_data_sets('../sample_data')
 
 
-	path = '../sample_data/sample3.csv'
+	path = '../sample_data/sample1.csv'
 
-	data = DataSet(path, header=True)
+	data1 = DataSet(path, header=True)
 
-	data.process_time_data(days_back=60, extrapolate_method='connect_points')
+	data1.process_time_data(days_back=60, extrapolate_method='connect_points')
 
-	predictors,target = data.training_set(output_type='regular')
+	predictors,target = data1.sliding_window_training_set()
 
+	time_series_length = predictors.shape[1]
+
+
+	# Add Ones and Zeros col for game type
+
+	#predictors1 = np.append(predictors1,np.ones([predictors1.shape[0],1]),1)
+	#predictors1 = np.append(predictors1,np.zeros([predictors1.shape[0],1]),1)
+
+	# path = '../sample_data/sample1.csv'
+	
+	# data2 = DataSet(path, header=True)
+
+	# data2.process_time_data(days_back=60, extrapolate_method='connect_points')
+
+	# predictors2,target2 = data2.training_set(output_type='zeros')
+
+	# # Add Zeros and Ones col for game type
+
+	# predictors2 = np.append(predictors2,np.zeros([predictors2.shape[0],1]),1)
+	# predictors2 = np.append(predictors2,np.ones([predictors2.shape[0],1]),1)
+
+	# predictors = np.concatenate((predictors1,predictors2))
+	# target = np.concatenate((target1,target2))
+
+	#pdb.set_trace()
+	#print(predictors)
 	start = time.time()
-
-	actual = predictors[predictors.shape[0]-1]
 
 	model, mse = create_model(predictors, target)
 
 	end = time.time()
 
-	print ("%0.2f" %((end-start)/60))
+	print ("Training time: %0.2f minutes" %((end-start)/60))
 
-	while True:
 
-		row = int(input("Enter number between 0 and %s" %predictors.shape[0]))
+	row = int(input("Enter number between 0 and %s: " %predictors.shape[0]))
 
-		pred_data = predictors[row,:]
+	pred_data = predictors[row,:]
 
-		pred_data = np.reshape(pred_data, (1,predictors.shape[0]))
+	pred_data = np.reshape(pred_data, (1,predictors.shape[1]))
 
-		predictions = model.predict(pred_data)
+	#print (pred_data)
 
-		plt.plot(predictions[0], 'r', actual, 'b' )
-		plt.show()
+	predictions = model.predict(pred_data)
 
-		time.sleep(10)
+	actual = target[row,0:time_series_length-1]
 
-		plt.close()
+	plt.plot(predictions[0], 'r', actual, 'b' )
+	plt.show()
+
+

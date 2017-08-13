@@ -6,11 +6,15 @@ path = '../sample_data/sample1.csv'
 
 mydata = DataSet(path, header=True)
 
-mydata.process_data(days_back=60, extrapolate_method='connect_points')
+#mydata.process_time_data(days_back=60, extrapolate_method='connect_points')
 
-x,y = mydata.training_set(output_type='regular')
+#print(mydata.processed_time_series[8500:mydata.processed_time_series.shape[0],:])
 
-print(y)
+mydata.create_training_set()
+
+#x,y = mydata.training_set(output_type='regular')
+
+#print(y)
 #print(mydata.training_inputs[60:80, 20:60])
 
 #print(mydata.new_unprocessed_matrix)
