@@ -35,7 +35,7 @@ def create_model(predictors, target):
 	filepath="weights.best.hdf5"
 	checkpoint = ModelCheckpoint(filepath, monitor='val_mean_squared_error', save_best_only=True, mode='max')
 
-	training = model.fit(predictors, target, verbose=True, batch_size = 5, epochs = 2, validation_split = 0.2,callbacks=[early_stopping_monitor, checkpoint])
+	training = model.fit(predictors, target, verbose=True, batch_size = 10, epochs = 10, validation_split = 0.2,callbacks=[early_stopping_monitor, checkpoint])
 
 	#print("Loss: %s, MSE: %s" %(training.history['val_loss'], training.history['mean_squared_error'] ) )
 	#print (training.history['val_loss'])
@@ -69,18 +69,18 @@ def load_data_sets(data_dir):
 if __name__=='__main__':
 
 
-	load_data_sets('../sample_data')
+	# load_data_sets('../sample_data')
 
 
-	path = '../sample_data/sample1.csv'
+	# path = '../sample_data/sample1.csv'
 
-	data1 = DataSet(path, header=True)
+	# data1 = DataSet(path, header=True)
 
-	data1.process_time_data(days_back=60, extrapolate_method='connect_points')
+	# data1.process_time_data(days_back=60, extrapolate_method='connect_points')
 
-	predictors,target = data1.sliding_window_training_set()
+	# predictors,target = data1.sliding_window_training_set()
 
-	time_series_length = predictors.shape[1]
+	# time_series_length = predictors.shape[1]
 
 
 	# Add Ones and Zeros col for game type
@@ -106,14 +106,42 @@ if __name__=='__main__':
 
 	#pdb.set_trace()
 	#print(predictors)
-	start = time.time()
+	start_reading = time.time()
+
+
+	input_path = 'training_sets/all/inputs/1502654033.csv'
+	output_path = 'training_sets/all/outputs/1502654033.csv'
+	
+	print("Reading inputs... ")
+
+	with open(input_path, 'rU') as input_file:
+		
+		reader = csv.reader(input_file)
+
+		predictors = np.array([row for row in reader])
+
+	print("Reading outputs... ")
+
+	with open(output_path, 'rU') as output_file:
+		
+		reader = csv.reader(output_file)
+
+		target = np.array([row for row in reader])
+
+	end_reading = time.time()
+
+	print ("Reading files time: %0.2f minutes" %((end_reading-start_reading)/60))
+
+	print("Input shape: %s" %str(predictors.shape))
+	print("Output shape: %s" %str(target.shape))
+
+	start_training = time.time()
 
 	model, mse = create_model(predictors, target)
 
-	end = time.time()
+	end_training = time.time()
 
-	print ("Training time: %0.2f minutes" %((end-start)/60))
-
+	print ("Training time: %0.2f minutes" %((end_training-start_training)/60))
 
 	row = int(input("Enter number between 0 and %s: " %predictors.shape[0]))
 
@@ -125,7 +153,7 @@ if __name__=='__main__':
 
 	predictions = model.predict(pred_data)
 
-	actual = target[row,0:time_series_length-1]
+	actual = target[row,:]
 
 	plt.plot(predictions[0], 'r', actual, 'b' )
 	plt.show()

@@ -59,8 +59,7 @@ def consolidate_training_files():
 
 	timestamp = str(time.time())[0:10]
 
-	all_inputs_matrix_created = False
-	all_outputs_matrix_created = False
+	input_training_file_created = False
 
 	for subdir, dirs, files in os.walk('training_sets/inputs'):
 
@@ -74,17 +73,23 @@ def consolidate_training_files():
 
 					data = np.array([row for row in reader])
 
-					if not all_inputs_matrix_created:
-						all_inputs_matrix = data
-						all_inputs_matrix_created = True
+					write_type = 'a'
 
-					else:
-						all_inputs_matrix = np.vstack((all_inputs_matrix,data))
+					if not input_training_file_created:
 
-	with open('training_sets/all/inputs/%s.csv' %timestamp, 'w+') as new_file:
+						write_type='w+'
 
-		writer = csv.writer(new_file)
-		writer.writerows(all_inputs_matrix)
+
+					with open('training_sets/all/inputs/%s.csv' %timestamp, write_type) as all_data_file:
+
+						writer = csv.writer(all_data_file)
+
+						input_training_file_created = True
+
+						writer.writerows(data)
+
+	output_training_file_created = False
+
 
 	for subdir, dirs, files in os.walk('training_sets/outputs'):
 
@@ -92,23 +97,27 @@ def consolidate_training_files():
 
 			if '.DS_Store' not in file:
 
-				with open('training_sets/inputs/%s' %file, 'rU') as data_file:
+				with open('training_sets/outputs/%s' %file, 'rU') as data_file:
 
 					reader = csv.reader(data_file)
 
 					data = np.array([row for row in reader])
 
-					if not all_outputs_matrix_created:
-						all_outputs_matrix = data
-						all_outputs_matrix_created = True
+					write_type = 'a'
 
-					else:
-						all_outputs_matrix = np.vstack((all_outputs_matrix,data))
+					if not output_training_file_created:
 
-	with open('training_sets/all/outputs/%s.csv' %timestamp, 'w+') as new_file:
+						write_type='w+'
 
-		writer = csv.writer(new_file)
-		writer.writerows(all_outputs_matrix)
+					with open('training_sets/all/outputs/%s.csv' %timestamp, write_type) as all_data_file:
+
+						writer = csv.writer(all_data_file)
+
+						output_training_file_created = True
+
+						writer.writerows(data)
+
+
 
 	end = time.time()
 
