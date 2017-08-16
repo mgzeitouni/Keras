@@ -35,7 +35,7 @@ def create_model(predictors, target):
 	filepath="weights.best.hdf5"
 	checkpoint = ModelCheckpoint(filepath, monitor='val_mean_squared_error', save_best_only=True, mode='max')
 
-	training = model.fit(predictors, target, verbose=True, batch_size = 10, epochs = 10, validation_split = 0.2,callbacks=[early_stopping_monitor, checkpoint])
+	training = model.fit(predictors, target, verbose=True, batch_size = 10, epochs = 1, validation_split = 0.2,callbacks=[early_stopping_monitor, checkpoint])
 
 	#print("Loss: %s, MSE: %s" %(training.history['val_loss'], training.history['mean_squared_error'] ) )
 	#print (training.history['val_loss'])
@@ -109,8 +109,8 @@ if __name__=='__main__':
 	start_reading = time.time()
 
 
-	input_path = 'training_sets/all/inputs/1502654033.csv'
-	output_path = 'training_sets/all/outputs/1502654033.csv'
+	input_path = 'training_sets/all/inputs/1502714105.csv'
+	output_path = 'training_sets/all/outputs/1502714105.csv'
 	
 	print("Reading inputs... ")
 

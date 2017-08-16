@@ -3,6 +3,8 @@ import numpy as np
 from .algebra_functions import *
 import pdb
 import keras.utils
+from pandas import Series
+import matplotlib.pyplot as plt
 
 def map_section(section):
 
@@ -15,7 +17,7 @@ def map_section(section):
 
 class DataSet:
 
-	def __init__(self, path, data_matrix):
+	def __init__(self, path, data_matrix, series_type='moving_average', window_width=2):
 
 		self.time_processed = False
 
@@ -27,17 +29,29 @@ class DataSet:
 
 		self.training_outputs = None
 
-		# with open(path, 'rU') as data_file:
+		# Check if time order ascending, else reverse it
 
-		# 	reader = csv.reader(data_file)
+		if data_matrix[0,0] > data_matrix[-1,0]:
 
-		# 	if header:
-		# 		next(reader,None)
+			price_list = data_matrix[:,1].tolist()
 
-		# 	data = np.array([row for row in reader])
+			price_list_reversed = list(reversed(price_list))
 
+			data_matrix[:,1] = price_list_reversed
+
+			time_list = data_matrix[:,0].tolist()
+
+			time_list_reversed = list(reversed(time_list))
+
+			data_matrix[:,0] = time_list_reversed
 
 		self.raw_data_matrix = data_matrix
+
+		if series_type=='moving_average':
+
+			self.window_width = window_width
+
+			self.moving_average(window_width)
 
 
 	def process_time_data(self, days_back=90, extrapolate_method='connect_points'):
@@ -135,11 +149,14 @@ class DataSet:
 
 		self.time_training_set = True
 
+		self.current_training_input = self.full_series_training_inputs
+		self.current_training_output = self.full_series_training_outputs
+
 		return self.full_series_training_inputs,self.full_series_training_outputs 
 
 
 
-	def sliding_window_training_set(self, days_back=30, days_ahead=30):
+	def sliding_window_training_set(self, differenced=True, base_difference='current_y', days_back=30, days_ahead=30):
 
 		if not self.time_processed:
 
@@ -170,44 +187,73 @@ class DataSet:
 
 			current_time = x[0]
 			current_y = x[1]
+			initial_last_y = current_y
+			last_y = None
 
-			# Loop through each days back and find difference in y
-			for k in range(len_back_sliding_window):
+			if differenced:
 
-				try:
-					y_to_compare = y_array[current_row+k+1]
-				except:
-					y_to_compare = current_y
+				# Loop through each days back and find difference in y
+				for k in range(len_back_sliding_window):
+
+					try:
+						y_to_compare = y_array[current_row+k+1]
+					except:
+						y_to_compare = current_y
+
+					if base_difference == 'current_y':
+						comparison = current_y
+					else:
+						if last_y == None:
+							last_y = initial_last_y
+						comparison = last_y
+
+					# Find difference and input in matrix (starting in third column)
+					input_matrix[current_row][k+2] = y_to_compare - comparison
+
+					last_y = y_to_compare
+
+				last_y = None
+
+				# Loop ahead for outputs to find prices in future
+				for k in range(len_ahead_sliding_window):
+
+					# Check if we have a time ahead
+					if current_row-k-1 < 0:
+						
+						y_to_compare = current_y
+
+					else:
+						y_to_compare = y_array[current_row-k-1]
+
+					if base_difference == 'current_y':
+						comparison = current_y
+					else:
+						if last_y == None:
+							last_y = initial_last_y
+						comparison = last_y
+						
+
+					# Find difference and put into matrix (starting in third column)
+					output_matrix[current_row][k] =   y_to_compare - comparison
+					last_y = y_to_compare
 
 
-				# Find difference and input in matrix (starting in third column)
-				input_matrix[current_row][k+2] = y_to_compare - current_y
+				current_row+=1
+
+			# Else we want actual numbers, not differenced
+			else:
+
+				
 
 
-			# Loop ahead for outputs to find prices in future
-			for k in range(len_ahead_sliding_window):
 
-				# Check if we have a time ahead
-				if current_row-k-1 < 0:
-					
-					y_to_compare = current_y
-					#pdb.set_trace()
-					#print ("row: %s, k: %s, y_to_compare: %s" %(current_row,k, y_to_compare))
-				else:
-					y_to_compare = y_array[current_row-k-1]
-					
-
-
-				# Find difference and put into matrix (starting in third column)
-				output_matrix[current_row][k] =   y_to_compare - current_y
-
-
-			current_row+=1
-
-			self.sliding_window_training_inputs = input_matrix
-			self.sliding_window_training_outputs = output_matrix
+		self.sliding_window_training_inputs = input_matrix
+		self.sliding_window_training_outputs = output_matrix
 
 		self.time_training_set = True
+
+		self.current_training_input = self.sliding_window_training_inputs
+		self.current_training_output = self.sliding_window_training_outputs
 		
 		return self.sliding_window_training_inputs,self.sliding_window_training_outputs 
 
@@ -244,7 +290,28 @@ class DataSet:
 
 		self.current_training_input = np.hstack((one_hot_labels,self.current_training_input))
 
-		self.current_training_output = self.sliding_window_training_outputs
+		
+
+	def moving_average(self,window_width = 2):
+
+		window_width = int(window_width * 144)
+
+		if self.time_processed == False:
+			self.process_time_data()
+
+		new_list = self.processed_time_series[:,1].tolist()
+
+		new_list = list(reversed(new_list))
+
+		series = Series(new_list)
+		
+		rolling = series.rolling(window=window_width)
+
+		rolling_mean = rolling.mean()
+
+		self.moving_average_series = rolling_mean
+
+		self.processed_time_series = self.moving_average_series
 
 
 

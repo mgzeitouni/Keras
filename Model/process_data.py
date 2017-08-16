@@ -8,6 +8,11 @@ import time
 
 def create_training_files(data_dir):
 
+	timestamp = str(time.time())[0:10]
+
+	os.mkdir('training_sets/inputs/%s' %timestamp)
+	os.mkdir('training_sets/outputs/%s' %timestamp)
+
 	for subdir, dirs, files in os.walk(data_dir):
 
 		for file in files:
@@ -31,20 +36,25 @@ def create_training_files(data_dir):
 					data = np.array([row for row in reader])
 
 
-				processed_data = DataSet(path, data)
+				#processed_data = DataSet(path, data)
+				processed_data = DataSet(path, data, window_width=2)
+
+				processed_data.sliding_window_training_set(base_difference = 'current_y')
 
 				processed_data.create_training_set()
 
+
+
 				# Write to input file
 				
-				with open("training_sets/inputs/%s_training_inputs.csv" %sample_name, 'w+') as training_file:
+				with open("training_sets/inputs/%s/%s_training.csv" %(timestamp,sample_name), 'w+') as training_file:
 
 					writer = csv.writer(training_file)
 
 					writer.writerows(processed_data.current_training_input)
 
 				
-				with open("training_sets/outputs/%s_training_outputs.csv" %sample_name, 'w+') as training_file:
+				with open("training_sets/outputs/%s/%s_training.csv" %(timestamp,sample_name), 'w+') as training_file:
 
 					writer = csv.writer(training_file)
 
@@ -53,21 +63,22 @@ def create_training_files(data_dir):
 
 
 
-def consolidate_training_files():
+def consolidate_training_files(timestamp):
 
 	start = time.time()
 
-	timestamp = str(time.time())[0:10]
+	#timestamp = str(time.time())[0:10]
+	timestamp = str(timestamp)
 
 	input_training_file_created = False
 
-	for subdir, dirs, files in os.walk('training_sets/inputs'):
+	for subdir, dirs, files in os.walk('training_sets/inputs/%s' %timestamp):
 
 		for file in files:
 
 			if '.DS_Store' not in file:
 
-				with open('training_sets/inputs/%s' %file, 'rU') as data_file:
+				with open('training_sets/inputs/%s/%s' %(timestamp, file), 'rU') as data_file:
 
 					reader = csv.reader(data_file)
 
@@ -91,13 +102,13 @@ def consolidate_training_files():
 	output_training_file_created = False
 
 
-	for subdir, dirs, files in os.walk('training_sets/outputs'):
+	for subdir, dirs, files in os.walk('training_sets/outputs/%s' %timestamp):
 
 		for file in files:
 
 			if '.DS_Store' not in file:
 
-				with open('training_sets/outputs/%s' %file, 'rU') as data_file:
+				with open('training_sets/outputs/%s/%s' %(timestamp, file), 'rU') as data_file:
 
 					reader = csv.reader(data_file)
 
@@ -126,6 +137,6 @@ def consolidate_training_files():
 if __name__=='__main__':
 
 
-	#create_training_files('../sample_data')
+	create_training_files('../sample_data')
 	
-	consolidate_training_files()
+	#consolidate_training_files(1502714105)
